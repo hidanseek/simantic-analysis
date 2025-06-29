@@ -82,7 +82,7 @@ class SemanticAnalysis(Visitor):
         self.scopeStack.enter("getString", StdEnvironment.getString)
         self.scopeStack.enter("putString", StdEnvironment.putString)
         self.scopeStack.enter("putLn", StdEnvironment.putLn)
-    
+
     '''
         Prints the name of a class, useful for debugging...
 
@@ -106,20 +106,20 @@ class SemanticAnalysis(Visitor):
         else:
             T = d.astType
         return T
-    
+
     # This function returns the element type of an ArrayType AST node.
     def typeOfArrayType(self, d):
         assert d != None
         assert isinstance(d, ArrayType)
         T = d
         return T.astType
-    
+
     # This function returns true, if an operator accepts integer or
     # floating point arguments.
     #  <int> x <int> -> <sometype>
     #  <float> x <float> -> <sometype>
     def HasIntOrFloatArgs(self, op):
-        return (op.Lexeme == '+' or 
+        return (op.Lexeme == '+' or
                 op.Lexeme == '-' or
                 op.Lexeme == '*' or
                 op.Lexeme == '/' or
@@ -129,7 +129,7 @@ class SemanticAnalysis(Visitor):
                 op.Lexeme == '>=' or
                 op.Lexeme == '==' or
                 op.Lexeme == '!=')
-    
+
     # This function returns true, if an operator accepts bool arguments.
     #  <bool> x <bool> -> <sometype>
     def HasBoolArgs(self, op):
@@ -138,7 +138,7 @@ class SemanticAnalysis(Visitor):
                 op.Lexeme == '!' or
                 op.Lexeme == '!=' or
                 op.Lexeme == '==')
-    
+
     # This function returns true, if an operator returns a bool value.
     #  <sometype> x <sometype> -> bool
     def HasBoolReturnType(self, op):
@@ -151,7 +151,7 @@ class SemanticAnalysis(Visitor):
                 op.Lexeme == '<=' or
                 op.Lexeme == '>' or
                 op.Lexeme == '>=')
-    
+
     # This function performs coercion of an integer-valued expression e.
     # It creates an i2f operator and a unary expression.
     # Expression e becomes the expression-AST of this unary expression.
@@ -172,7 +172,7 @@ class SemanticAnalysis(Visitor):
         eAST = UnaryExpr(op, e, SourcePos())
         eAST.type = StdEnvironment.floatType
         return eAST
-    
+
     # Given a function declaration FunDecl, this method returns the number
     # of formal parameters. E.g., for the following function
     #
@@ -191,8 +191,8 @@ class SemanticAnalysis(Visitor):
             D = D.rAST
             assert isinstance(D, EmptyFormalParamDecl) or isinstance(D, FormalParamDeclSequence)
         return NrArgs
-    
-    # Given a function declaration FunDecl, this method returns the AST for 
+
+    # Given a function declaration FunDecl, this method returns the AST for
     # the formal parameter nr (nr is the number of the parameter).
     # E.g., for the following function and nr=2,
     #
@@ -210,7 +210,7 @@ class SemanticAnalysis(Visitor):
             S = S.rAST
         assert isinstance(S.lAST, FormalParamDecl)
         return S.lAST
-    
+
     # Get the number of actual parameters of a function call expression:
     # Similar to GetNrOfFormalParams above.
     # Note: this function assumes the AST tree layout from Assignment 3.
@@ -225,7 +225,7 @@ class SemanticAnalysis(Visitor):
             P = P.rAST
             assert isinstance(P, EmptyActualParam) or isinstance(P, ActualParamSequence)
         return NrArgs
-    
+
     # Given a function call expression, get the actual parameter nr
     # (nr is the number of the parameter).
     # Similar to GetFormalParam above.
@@ -240,7 +240,7 @@ class SemanticAnalysis(Visitor):
             P = P.rAST
         assert isinstance(P.lAST, ActualParam)
         return P.lAST
-    
+
     # Given a type t, this function can be used to print the type.
     # Useful for debuggging, a similar mechanism is used in the
     # TreeDrawer Visitor.
@@ -248,19 +248,19 @@ class SemanticAnalysis(Visitor):
         def TypeTag (self, t) {
             l = ""
             if t == None:
-                l = "<?>"
+                l = "<?>";
             elif t.Tequal(StdEnvironment.intType):
-                l = "<int>"
+                l = "<int>";
             elif t.Tequal(StdEnvironment.boolType):
-                l = "<bool>"
+                l = "<bool>";
             elif t.Tequal(StdEnvironment.floatType):
-                l = "<float>"
+                l = "<float>";
             elif t.Tequal(StdEnvironment.stringType):
-                l = "<string>"
+                l = "<string>";
             elif t.Tequal(StdEnvironment.voidType):
-                l = "<void>"
+                l = "<void>";
             elif isinstance(t, ErrorType):
-                l = "<error>"
+                l = "<error>";
             else:
                 assert False
             return l
@@ -323,7 +323,7 @@ class SemanticAnalysis(Visitor):
     @singledispatchmethod
     def visit(self, x):
         return super().visit(x)
-    
+
     # Checks whether the source program, represented by its AST, satisfies the
     # language's scope rules and type rules.
     # Decorates the AST as follows:
@@ -338,15 +338,17 @@ class SemanticAnalysis(Visitor):
         #
         # Retrieve "main" from the scope stack. If it is not there (null is
         # returned, then the program does not contain a main function.
-        
+
         # Start of your code:
-        
+        mainDecl = self.scopeStack.retrieve("main")
+        if mainDecl is None or not isinstance(mainDecl, FunDecl):
+            self.reporter.reportError(self.errMsg[0], "", progAST.pos)
         # End of your code
-    
+
     @visit.register
     def _(self, x: Program):
         x.D.accept(self)
-    
+
     @visit.register
     def _(self, x: EmptyDecl):
         pass
@@ -359,18 +361,20 @@ class SemanticAnalysis(Visitor):
         # name is already present in this scope.
 
         # Start of your code:
-
+        if not self.scopeStack.enter(x.idAST.Lexeme, x):
+            self.reporter.reportError(self.errMsg[2], "", x.idAST.pos)
         # End of your code
 
-        
+
         # STEP 3:
-        # Check Error 1: 
+        # Check Error 1:
         # If this function is the "main" function, then ensure that
         # x.tAST is of type int.
 
-        # Start of your code: 
-
-        # End of your code 
+        # Start of your code:
+        if x.idAST.Lexeme == "main" and not x.tAST.Tequal(StdEnvironment.intType):
+            self.reporter.reportError(self.errMsg[1], "", x.idAST.pos)
+        # End of your code
 
         # STEP 1:
         # Open a new scope in the scope stack. This will be the scope for the
@@ -378,8 +382,8 @@ class SemanticAnalysis(Visitor):
         # We will close this scope in the visit procedure of this
         # function's compound_stmt.
 
-        # Start of your code: 
-
+        # Start of your code:
+        self.scopeStack.openScope()
         # End of your code
 
 
@@ -387,14 +391,14 @@ class SemanticAnalysis(Visitor):
         # to avoid opening a fresh scope for function bodies (because we have
         # already opened one, for the formal parameters).
         self.IsFunctionBlock = True     # needed in {...}, to avoid opening a fresh scope.
-        
+
         x.paramsAST.accept(self)
         x.stmtAST.accept(self)
 
     @visit.register
     def _(self, x: TypeDecl):
         assert False    # TypeDecl nodes occur only in the StdEnvironment AST.
-    
+
     @visit.register
     def _(self, x: FormalParamDecl):
         if isinstance(x.astType, ArrayType):
@@ -407,22 +411,26 @@ class SemanticAnalysis(Visitor):
         # Error 2 in that case.
 
         # Start of your code:
-
+        if not self.scopeStack.enter(x.astIdent.Lexeme, x):
+            self.reporter.reportError(self.errMsg[2], "", x.astIdent.pos)
         # End of your code
 
         # STEP 3:
-        # Check that the formal parameter is not of type void or void[]. 
+        # Check that the formal parameter is not of type void or void[].
         # Report error messages 3 and 4 respectively:
 
         # Start of your code:
-
+        if isinstance(x.astType, VoidType):
+            self.reporter.reportError(self.errMsg[3], "", x.astType.pos)
+        elif isinstance(x.astType, ArrayType) and isinstance(x.astType.astType, VoidType):
+            self.reporter.reportError(self.errMsg[4], "", x.astType.pos)
         # End of your code
-    
+
     @visit.register
     def _(self, x: FormalParamDeclSequence):
         x.lAST.accept(self)
         x.rAST.accept(self)
-        
+
     @visit.register
     def _(self, x: EmptyFormalParamDecl):
         pass
@@ -431,7 +439,7 @@ class SemanticAnalysis(Visitor):
     def _(self, x: StmtSequence):
         x.s1AST.accept(self)
         x.s2AST.accept(self)
-    
+
     @visit.register
     def _(self, x: AssignStmt):
         x.lAST.accept(self)
@@ -452,13 +460,13 @@ class SemanticAnalysis(Visitor):
         #    statement uses a similar mechanism....
         # If conditions (1) or (2) are violated, then you should report Error 6.
 
-        # Start of your code: 
+        # Start of your code:
 
-        # End of your code 
-        
+        # End of your code
+
         if (not isinstance(x.lAST, VarExpr)) and (not isinstance(x.lAST, ArrayExpr)):
             self.reporter.reportError(self.errMsg[7], "", x.lAST.pos)
-    
+
     @visit.register
     def _(self, x: IfStmt):
         x.eAST.accept(self)
@@ -473,7 +481,7 @@ class SemanticAnalysis(Visitor):
         x.thenAST.accept(self)
         if x.elseAST != None:
             x.elseAST.accept(self)
-    
+
     @visit.register
     def _(self, x: WhileStmt):
         x.eAST.accept(self)
@@ -486,7 +494,7 @@ class SemanticAnalysis(Visitor):
 
         # End of your code
         x.stmtAST.accept(self)
-    
+
     @visit.register
     def _(self, x: ForStmt):
         x.e1AST.accept(self)
@@ -497,7 +505,7 @@ class SemanticAnalysis(Visitor):
         if not isinstance(x.e3AST, EmptyExpr):
             x.e3AST.accept(self)
         x.stmtAST.accept(self)
-    
+
     @visit.register
     def _(self, x: ReturnStmt):
         # STEP 2:
@@ -505,13 +513,12 @@ class SemanticAnalysis(Visitor):
         # statement's expression with the return type of the function.
         # Uncomment this code
         # as soon as you have finished type-checking of expressions.
-        ''' START:
         if isinstance(x.eAST, EmptyExpr):
             # "return;" requires void function return type:
             if not self.currentFunctionReturnType.Tequal(StdEnvironment.voidType):
                 self.reporter.reportError(self.errMsg[8], "", x.eAST.pos)
             return  # done -> early exit
-        
+
         #
         # Falling through here means x.eAST != EmptyExpr
         #
@@ -521,13 +528,12 @@ class SemanticAnalysis(Visitor):
             # the expression of the return statement is of type int, we
             # need to convert this expression to float.
             if self.currentFunctionReturnType.Tequal(StdEnvironment.floatType) and \
-                self.eAST.type.Tequal(StdEnvironment.intType):
+                x.eAST.type.Tequal(StdEnvironment.intType):
                 #coercion of operand to int:
                 x.eAST = self.i2f(x.eAST)
         else:
             self.reporter.reportError(self.errMsg[8], "", x.eAST.pos)
-        END '''
-    
+
     @visit.register
     def _(self, x: CompoundStmt):
         '''
@@ -544,16 +550,19 @@ class SemanticAnalysis(Visitor):
             # a function body.
 
             # Start of your code:
-            pass
+            self.scopeStack.openScope()
             # End of your code
-        
+
         # STEP 1:
         # Invoke the semantic analysis visitor for the declarations and the
         # statements of this CompoundStmt. Hint: look up the file AstGen/CompoundStmt.java
         # to learn about the AST children of this node.
 
         # Start of your code:
-
+        if x.astDecl is not None:
+            x.astDecl.accept(self)
+        if x.astStmt is not None:
+            x.astStmt.accept(self)
         # End of your code
 
         # STEP 1:
@@ -561,7 +570,7 @@ class SemanticAnalysis(Visitor):
         # for this compound statement (even if it represents a function body).
 
         # Start of your code:
-
+        self.scopeStack.closeScope()
         # End of your code
 
     @visit.register
@@ -575,13 +584,15 @@ class SemanticAnalysis(Visitor):
         # a function.
 
         # Start of your code:
-        pass
+        if self.IsFunctionBlock:
+            self.IsFunctionBlock = False
+            self.scopeStack.closeScope()
         # End of your code
-    
+
     @visit.register
     def _(self, x: CallStmt):
         x.eAST.accept(self)
-    
+
     @visit.register
     def _(self, x: VarDecl):
         if isinstance(x.tAST, ArrayType):
@@ -596,7 +607,25 @@ class SemanticAnalysis(Visitor):
                 # Perform i2f coercion if necessary.
 
                 # Start of your code:
-                pass
+                elem_type = self.typeOfArrayType(x.tAST)
+                if isinstance(x.eAST, ExprSequence):
+                    elements = []
+                    seq = x.eAST
+                    while isinstance(seq, ExprSequence):
+                        elements.append(seq.lAST)
+                        seq = seq.rAST
+                    if not isinstance(seq, EmptyExpr):
+                        elements.append(seq)
+                    if len(elements) > x.tAST.GetRange():
+                        self.reporter.reportError(self.errMsg[16], "", x.eAST.pos)
+                    for e in elements:
+                        if not e.type.AssignableTo(elem_type):
+                            self.reporter.reportError(self.errMsg[13], "", e.pos)
+                        elif elem_type.Tequal(StdEnvironment.floatType) and e.type.Tequal(StdEnvironment.intType):
+                            self.i2f(e)
+                    # nothing else
+                else:
+                    self.reporter.reportError(self.errMsg[15], "", x.eAST.pos)
                 # End of your code
             else:
                 #STEP 4:
@@ -606,7 +635,13 @@ class SemanticAnalysis(Visitor):
                 # Perform i2f coercion if necessary.
 
                 # Start of your code:
-                pass
+                if isinstance(x.eAST, ExprSequence):
+                    self.reporter.reportError(self.errMsg[14], "", x.eAST.pos)
+                elif not x.eAST.type.AssignableTo(x.tAST):
+                    self.reporter.reportError(self.errMsg[6], "", x.eAST.pos)
+                else:
+                    if x.tAST.Tequal(StdEnvironment.floatType) and x.eAST.type.Tequal(StdEnvironment.intType):
+                        x.eAST = self.i2f(x.eAST)
                 # End of your code
 
         #STEP 1:
@@ -616,22 +651,26 @@ class SemanticAnalysis(Visitor):
         # report Error 2.
 
         # Start of your code:
-        pass
+        if not self.scopeStack.enter(x.idAST.Lexeme, x):
+            self.reporter.reportError(self.errMsg[2], "", x.idAST.pos)
         # End of your code
 
         # STEP 3:
-        # Check that the variable is not of type void or void[]. 
+        # Check that the variable is not of type void or void[].
         # Report error messages 3 and 4 respectively:
 
         # Start of your code:
-        pass
+        if isinstance(x.tAST, VoidType):
+            self.reporter.reportError(self.errMsg[3], "", x.tAST.pos)
+        elif isinstance(x.tAST, ArrayType) and isinstance(x.tAST.astType, VoidType):
+            self.reporter.reportError(self.errMsg[4], "", x.tAST.pos)
         # End of your code
-    
+
     @visit.register
     def _(self, x: DeclSequence):
         x.D1.accept(self)
         x.D2.accept(self)
-    
+
     @visit.register
     def _(self, x: VarExpr):
         x.Ident.accept(self)
@@ -643,9 +682,11 @@ class SemanticAnalysis(Visitor):
         # Error 11 and set x.type to the error type from StdEnvironment.
         x.type = self.typeOfDecl(x.Ident.declAST)
         # Start of your code:
-        pass
+        if isinstance(x.Ident.declAST, FunDecl):
+            self.reporter.reportError(self.errMsg[11], "", x.Ident.pos)
+            x.type = StdEnvironment.errorType
         # End of your code
-    
+
     @visit.register
     def _(self, x: AssignExpr):
         x.lAST.accept(self)
@@ -660,7 +701,7 @@ class SemanticAnalysis(Visitor):
             self.reporter.reportError(self.errMsg[6], "", x.rAST.pos)
         if not(isinstance(x.lAST, VarExpr)) and not(isinstance(x.lAST, ArrayExpr)):
             self.reporter.reportError(self.errMsg[7], "", x.lAST.pos)
-    
+
     @visit.register
     def _(self, x: IntExpr):
         #STEP 2:
@@ -669,9 +710,9 @@ class SemanticAnalysis(Visitor):
         # (StdEnvironment.intType).
 
         # Start of your code:
-        pass
+        x.type = StdEnvironment.intType
         # End of your code
-    
+
     @visit.register
     def _(self, x: FloatExpr):
         #STEP 2:
@@ -680,7 +721,7 @@ class SemanticAnalysis(Visitor):
         # (StdEnvironment.floatType).
 
         # Start of your code:
-        pass
+        x.type = StdEnvironment.floatType
         # End of your code
 
     @visit.register
@@ -691,7 +732,7 @@ class SemanticAnalysis(Visitor):
         # (StdEnvironment.boolType).
 
         # Start of your code:
-        pass
+        x.type = StdEnvironment.boolType
         # End of your code
 
     @visit.register
@@ -702,9 +743,9 @@ class SemanticAnalysis(Visitor):
         # (StdEnvironment.stringType).
 
         # Start of your code:
-        pass
+        x.type = StdEnvironment.stringType
         # End of your code
-    
+
     @visit.register
     def _(self, x: ArrayExpr):
         x.idAST.accept(self)
@@ -717,7 +758,7 @@ class SemanticAnalysis(Visitor):
             x.type = StdEnvironment.errorType
         else:
             x.type = self.typeOfArrayType(x.idAST.type)
-    
+
     @visit.register
     def _(self, x: BinaryExpr):
         x.lAST.accept(self)
@@ -760,23 +801,28 @@ class SemanticAnalysis(Visitor):
                 # This is the dual case to "int x float" above.
 
                 # Start of your code:
-                pass
+                x.rAST = self.i2f(x.rAST)
+                x.oAST.type = StdEnvironment.floatType
+                if self.HasBoolReturnType(x.oAST):
+                    x.type = StdEnvironment.boolType
+                else:
+                    x.type = StdEnvironment.floatType
                 # End of your code
                 return
-        
+
         if self.HasBoolArgs(x.oAST):
             if (x.lAST.type.Tequal(StdEnvironment.boolType) and \
                 x.rAST.type.Tequal(StdEnvironment.boolType)):
-                x.oAST.type = StdEnvironment.intType 
+                x.oAST.type = StdEnvironment.intType
                 x.type = StdEnvironment.boolType
                 return
-        
+
         x.oAST.type = StdEnvironment.errorType
         x.type = StdEnvironment.errorType
         if not(isinstance(x.lAST.type, ErrorType) or isinstance(x.rAST.type, ErrorType)):
             # Error not spurious, because AST children are ok.
             self.reporter.reportError(self.errMsg[9], "", x.pos)
-    
+
     @visit.register
     def _(self, x: UnaryExpr):
         x.oAST.accept(self)
@@ -802,8 +848,17 @@ class SemanticAnalysis(Visitor):
         # slightly more complicated case.
 
         # Start of your code:
-        pass
-        # End of your code 
+        if (x.eAST.type.Tequal(StdEnvironment.intType) or x.eAST.type.Tequal(StdEnvironment.floatType)) and self.HasIntOrFloatArgs(x.oAST):
+            x.oAST.type = x.eAST.type
+            x.type = x.eAST.type
+        elif x.eAST.type.Tequal(StdEnvironment.boolType) and self.HasBoolArgs(x.oAST):
+            x.oAST.type = StdEnvironment.intType
+            x.type = StdEnvironment.boolType
+        else:
+            x.oAST.type = StdEnvironment.errorType
+            x.type = StdEnvironment.errorType
+            self.reporter.reportError(self.errMsg[10], "", x.oAST.pos)
+        # End of your code
 
     @visit.register
     def _(self, x: EmptyExpr):
@@ -813,7 +868,7 @@ class SemanticAnalysis(Visitor):
     def _(self, x: ActualParam):
         x.pAST.accept(self)
         x.type = x.pAST.type
-    
+
     @visit.register
     def _(self, x: EmptyActualParam):
         pass
@@ -822,7 +877,7 @@ class SemanticAnalysis(Visitor):
     def _(self, x: ActualParamSequence):
         x.lAST.accept(self)
         x.rAST.accept(self)
-    
+
     @visit.register
     def _(self, x: CallExpr):
         # Here we perform semantic analysis of function calls:
@@ -836,10 +891,12 @@ class SemanticAnalysis(Visitor):
         # Error 19 and *return*.
         # This check detects cases like
         #  int f; f(22);
-        # where f is not a function. 
+        # where f is not a function.
 
         # Start of your code:
-
+        if not isinstance(D, FunDecl):
+            self.reporter.reportError(self.errMsg[19], "", x.pos)
+            return
         # End of your code
 
         # FunDecl: F = FunDecl: D
@@ -853,7 +910,14 @@ class SemanticAnalysis(Visitor):
         # the number of formal and actual parameters.
 
         # Start of your code:
-
+        numFormal = self.GetNrOfFormalParams(F)
+        numActual = self.GetNrOfActualParams(x)
+        if numActual > numFormal:
+            self.reporter.reportError(self.errMsg[23], "", x.pos)
+            return
+        if numActual < numFormal:
+            self.reporter.reportError(self.errMsg[24], "", x.pos)
+            return
         # End of your code
 
         # STEP 2:
@@ -885,20 +949,26 @@ class SemanticAnalysis(Visitor):
             Act = self.GetActualParam(x, i)
             FormalT = Form.astType
             ActualT = Act.pAST.type
-        
+            if ActualT.AssignableTo(FormalT):
+                if FormalT.Tequal(StdEnvironment.floatType) and ActualT.Tequal(StdEnvironment.intType):
+                    Act.pAST = self.i2f(Act.pAST)
+            else:
+                self.reporter.reportError(self.errMsg[25] + ", parameter " + str(i), "", x.pos)
+                return
+
         # End of your code
         '''
 
-        # If we fall through here, no semantic error occurred -> set the 
+        # If we fall through here, no semantic error occurred -> set the
         # return type of the call expression to the return type of
-        # its function:              
+        # its function:
         x.type = self.typeOfDecl(F)
-    
+
     @visit.register
     def _(self, x: ExprSequence):
         x.lAST.accept(self)
         x.rAST.accept(self)
-    
+
     @visit.register
     def _(self, x: ID):
         # STEP 1:
@@ -908,10 +978,11 @@ class SemanticAnalysis(Visitor):
         binding = self.scopeStack.retrieve(x.Lexeme)
         if binding != None:
             x.declAST = binding
-        # Start of your code: 
-
+        # Start of your code:
+        if binding is None:
+            self.reporter.reportError(self.errMsg[5], "", x.pos)
         # End of your code
-    
+
     @visit.register
     def _(self, x: Operator):
         pass
@@ -959,5 +1030,3 @@ class SemanticAnalysis(Visitor):
     @visit.register
     def _(self, x: ErrorType):
         pass
-
-
